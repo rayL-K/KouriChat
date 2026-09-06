@@ -103,6 +103,12 @@ async function pollLogin() {
 
 async function finish() {
   await saveSettings();
+  // 引导完成 → 运行时热重载 llm.factory（新 key/model 立即生效，无需重启进程）
+  try {
+    await api.llmReload();
+  } catch {
+    /* 热重载失败不阻断进入控制台 */
+  }
   emit("done");
 }
 

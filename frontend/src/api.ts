@@ -97,8 +97,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ text, channel_type: channelType }),
     }),
-  logs: (limit = 200, level = "DEBUG") =>
-    req<{ logs: LogRow[] }>(`/api/logs?limit=${limit}&level=${level}`),
+  logs: (limit = 200, level = "DEBUG", skip = 0) =>
+    req<{ logs: LogRow[] }>(`/api/logs?limit=${limit}&level=${level}&skip=${skip}`),
   settingsGet: () =>
     req<{ ok: boolean; fields: SettingsFields }>("/api/settings"),
   settingsSave: (fields: SettingsFields) =>
@@ -112,5 +112,10 @@ export const api = {
     req<{ ok: boolean; reply?: string; model?: string; note?: string; error?: string }>("/api/llm/test", {
       method: "POST",
       body: JSON.stringify({ llm }),
+    }),
+  llmReload: () =>
+    req<{ ok: boolean; note?: string; error?: string }>("/api/llm/reload", {
+      method: "POST",
+      body: "{}",
     }),
 };

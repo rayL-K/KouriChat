@@ -61,12 +61,15 @@ class LogBuffer:
                 "line": str(message),
             })
 
-    def snapshot(self, limit: int = 100, level: str = "DEBUG") -> list[dict[str, Any]]:
+    def snapshot(self, limit: int = 100, level: str = "DEBUG",
+                 skip: int = 0) -> list[dict[str, Any]]:
+        """按级别过滤后返回日志（新→旧）；skip 跳过最新 skip 条（懒加载更早）。"""
         min_level = _LOG_LEVELS.get(str(level).upper(), 0)
         with self._lock:
             rows = [r for r in self._buf
                     if _LOG_LEVELS.get(r["level"], 0) >= min_level]
-        return list(reversed(rows))[: max(1, limit)]
+        all_rows = list(reversed(rows))
+        return all_rows[skip: skip + max(1, limit)]
 
 
 # ---------------------------------------------------------------------------
@@ -174,8 +177,9 @@ async def api_chat_mock(request: web.Request) -> web.Response:
 async def api_logs(request: web.Request) -> web.Response:
     limit = int(request.query.get("limit", "100") or 100)
     level = str(request.query.get("level", "DEBUG") or "DEBUG")
+    skip = int(request.query.get("skip", "0") or 0)
     buf = request.app["logbuf"]
-    return _json({"logs": buf.snapshot(limit=limit, level=level)})
+    return _json({"logs": buf.snapshot(limit=limit, level=level, skip=skip)})
 
 
 def _config_service(ctx: Any) -> Any:
@@ -341,6 +345,30 @@ async def api_settings_get(request: web.Request) -> web.Response:
         _load_config_data(cfg))})
 
 
+async def _reload_llm_factory(ctx: Any, llm_cfg: dict[str, Any]) -> bool:
+    """运行时重启 llm.factory 组件（dispose 旧 fiber → 新配置重新 plugin）。
+
+    会话记忆经 elixir Store 持久化，重载后新 Session 从磁盘恢复，不丢记忆。
+    """
+    import importlib
+    fiber = None
+    for entry in ctx.root._services.values():
+        if getattr(entry, "name", None) == "llm.factory":
+            fiber = entry.provider
+            break
+    old = dict(fiber.config or {}) if fiber is not None else {}
+    new_cfg = {**old, **(llm_cfg or {})}
+    if fiber is not None:
+        await fiber.dispose()
+    module = importlib.import_module("kourichat.llm.factory")
+    apply = getattr(module, "apply", None)
+    if apply is None:
+        return False
+    new_fiber = ctx.plugin(apply, new_cfg)
+    await new_fiber.wait()
+    return True
+
+
 async def api_settings_post(request: web.Request) -> web.Response:
     cfg = _config_service(request.app["ctx"])
     body = await _read_body(request)
@@ -368,7 +396,32 @@ async def api_settings_post(request: web.Request) -> web.Response:
                                    access_token=oc.get("access_token"))
         except Exception:
             pass  # 适配器无此方法时忽略（旧版本）
-    return _json({"ok": True, "note": "已保存"})
+    # LLM 配置变更 → 运行时重启 llm.factory 组件（新 key/model 立即生效）
+    notes: list[str] = ["已保存"]
+    if fields.get("llm"):
+        try:
+            if await _reload_llm_factory(request.app["ctx"], fields["llm"]):
+                notes.append("LLM 组件已热重载")
+            else:
+                notes.append("llm.factory 未装配，跳过热重载")
+        except Exception as exc:
+            notes.append(f"LLM 热重载失败: {exc}")
+    return _json({"ok": True, "note": "；".join(notes)})
+
+
+async def api_llm_reload(request: web.Request) -> web.Response:
+    """显式热重载 llm.factory：用当前配置文件里的 LLM 设置重启组件。"""
+    ctx = request.app["ctx"]
+    cfg = ctx.get("config")
+    llm: dict[str, Any] = {}
+    if cfg is not None:
+        llm = _project_settings(_load_config_data(cfg))["llm"]
+    try:
+        if await _reload_llm_factory(ctx, llm):
+            return _json({"ok": True, "note": "LLM 组件已热重载（新配置已生效）"})
+        return _json({"ok": False, "error": "llm.factory 未装配，无法重载"}, 400)
+    except Exception as exc:
+        return _json({"ok": False, "error": f"LLM 热重载失败: {exc}"}, 400)
 
 
 async def api_llm_test(request: web.Request) -> web.Response:
@@ -481,6 +534,7 @@ async def build_app(ctx: Any, config: dict[str, Any] | None = None) -> Any:
     app.router.add_get("/api/settings", api_settings_get)
     app.router.add_post("/api/settings", api_settings_post)
     app.router.add_post("/api/llm/test", api_llm_test)
+    app.router.add_post("/api/llm/reload", api_llm_reload)
     app.router.add_get("/api/setup/status", api_setup_status)
     app.router.add_get("/api/dashboard", api_dashboard)
     app.router.add_get("/", _serve_static)

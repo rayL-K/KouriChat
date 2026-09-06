@@ -81,6 +81,27 @@ async function testLlm() {
   }
 }
 
+// —— LLM 热重载（运行时重启 llm.factory 组件）——
+const reloading = ref(false);
+const reloadResult = ref<{ ok: boolean; text: string } | null>(null);
+
+async function reloadLlm() {
+  reloading.value = true;
+  reloadResult.value = null;
+  try {
+    // 先保存当前表单值（保证文件与内存一致），再热重载
+    await api.settingsSave(JSON.parse(JSON.stringify(fields)));
+    const r = await api.llmReload();
+    reloadResult.value = r.ok
+      ? { ok: true, text: `✅ ${r.note ?? "LLM 组件已热重载"}` }
+      : { ok: false, text: `❌ ${r.error ?? "热重载失败"}` };
+  } catch (err) {
+    reloadResult.value = { ok: false, text: `❌ ${err instanceof Error ? err.message : String(err)}` };
+  } finally {
+    reloading.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -150,17 +171,29 @@ onMounted(load);
       <section class="card p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-slate-300">LLM（elixir / OpenAI 兼容）</h3>
-          <button
-            class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-            :disabled="testing"
-            @click="testLlm"
-          >{{ testing ? "测试中…" : "测试连通" }}</button>
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+              :disabled="testing"
+              @click="testLlm"
+            >{{ testing ? "测试中…" : "测试连通" }}</button>
+            <button
+              class="rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+              :disabled="reloading"
+              @click="reloadLlm"
+            >{{ reloading ? "重载中…" : "保存并热重载" }}</button>
+          </div>
         </div>
         <p
           v-if="testResult"
           class="mb-3 rounded-lg px-3 py-2 text-xs"
           :class="testResult.ok ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'"
         >{{ testResult.text }}</p>
+        <p
+          v-if="reloadResult"
+          class="mb-3 rounded-lg px-3 py-2 text-xs"
+          :class="reloadResult.ok ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'"
+        >{{ reloadResult.text }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <label class="mb-1.5 block text-xs text-slate-500">Base URL</label>

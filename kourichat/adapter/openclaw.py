@@ -84,9 +84,11 @@ class OpenClawAdapter(OneBotV11Adapter):
 
     # —— WS 连接（forward + 自动重连）——
     async def _run_forever(self) -> None:
-        headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
         while True:
             try:
+                # 每次重连重新读取 token：引导页/设置页热更新后立即生效
+                headers = ({"Authorization": f"Bearer {self.token}"}
+                           if self.token else {})
                 self._ws = await websockets.connect(
                     self.ws_url, additional_headers=headers)
                 self._connected = True
