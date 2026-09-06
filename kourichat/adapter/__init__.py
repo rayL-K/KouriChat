@@ -3,5 +3,6 @@
 from .base import Adapter
 from .cli import CliAdapter
 from .onebot import OneBotV11Adapter
+from .openclaw import OpenClawAdapter
 
-__all__ = ["Adapter", "CliAdapter", "OneBotV11Adapter"]
+__all__ = ["Adapter", "CliAdapter", "OneBotV11Adapter", "OpenClawAdapter"]

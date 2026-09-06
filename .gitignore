@@ -24,3 +24,14 @@ docs
 scripts
 tests/
 /tests/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Dev/smoke artifacts
+.smoke/
+*.bak
+# wheel 内静态产物（由 build.ps1 从 frontend/dist 填充）
+kourichat/webui/static/
+dist/

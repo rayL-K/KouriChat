@@ -119,6 +119,20 @@ python run_config_web.py
 python run.py
 ```
 
+#### WebUI 控制台（1.5 重构版，可选）
+
+前端位于 `frontend/`（Vue3 + Vite + TS + Tailwind）：
+
+```bash
+cd frontend
+npm install
+npm run build      # 产出 frontend/dist，kourichat.webui 插件默认托管该目录
+```
+
+`kourichat.toml` 增加 `[[plugins]] module = "kourichat.webui"`（默认 127.0.0.1:8080），
+`kourichat run` 后浏览器打开 http://127.0.0.1:8080：
+扫码登录、账号状态、聊天调试、日志、配置编辑。
+
 如果您是服务器部署 推荐安装uu远程 自带不休眠功能 用RDP远程的用户断开连接务必运行断开连接脚本！！！<br>
 1.4.3.2版本注意意图识别密钥也要填写哦！
 
