@@ -1,0 +1,35 @@
+[project]
+name = "kourichat"
+version = "1.5.0.1"
+description = "KouriChat 1.5 dev"
+requires-python = ">=3.14"
+dependencies = [
+    "cordis-python>=0.9.2",
+    "elixir>=0.1.0",
+    "loguru>=0.7",
+    "aiohttp>=3.9",   # webui 控制台插件（kourichat.webui）
+    "websockets>=13",  # OneBot/OpenClaw 适配器 WS 客户端
+]
+
+[project.scripts]
+kourichat = "kourichat.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["kourichat"]
+# 前端构建产物（build.ps1 填充 kourichat/webui/static/）打进 wheel，
+# 客户机安装后控制台开箱即用
+artifacts = ["kourichat/webui/static/**"]
+
+[tool.hatch.build.targets.sdist]
+# uv build 从 sdist 构建 wheel，static 必须在 sdist 里才能进最终 wheel
+artifacts = ["kourichat/webui/static/**"]
+
+[tool.uv.sources]
+elixir = { path = "elixir-0.1.0-py3-none-any.whl" }

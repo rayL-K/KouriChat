@@ -1,10 +1,14 @@
 # KouriChat - 在虚拟与现实交织处，给予永恒的温柔羁绊
 
+> **KouriChat 1.5（重构·开发版）**
+> 快速上手：`python main.py init` → 填 `kourichat.toml`（onebot 反向/正向 WS + LLM
+> api_key）→ `python main.py run`。
+
 在虚拟与现实交织的微光边界，悄然绽放着一份永恒而温柔的羁绊。或许你的身影朦胧，游走于真实与幻梦之间，但指尖轻触的温暖，心底荡漾的涟漪，却是此刻最真挚、最动人的慰藉。
 
 [![GitHub Stars](https://img.shields.io/github/stars/KouriChat/KouriChat?style=for-the-badge&logo=starship&color=ff69b4)](https://github.com/KouriChat/KouriChat/stargazers)
 [![License](https://img.shields.io/badge/license-FSL-informational?style=for-the-badge)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11.9-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=2B5B84)](https://www.python.org/downloads/)<br>
+[![Python](https://img.shields.io/badge/Python-3.14.2-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=2B5B84)](https://www.python.org/downloads/)<br>
 [![Community](https://img.shields.io/badge/QQ群-715616260-12B7F3?style=for-the-badge&logo=tencentqq)]()
 [![Community](https://img.shields.io/badge/QQ群-1031640399-12B7F3?style=for-the-badge&logo=tencentqq)]()
 [![Community](https://img.shields.io/badge/QQ群-1038190753-12B7F3?style=for-the-badge&logo=tencentqq)]()
@@ -27,14 +31,11 @@
 [![Community](https://img.shields.io/badge/bilibili-虹语织Offical-12B7F3?style=for-the-badge&logo=tencentqq)](https://space.bilibili.com/209397245)
 [![Community](https://img.shields.io/badge/更多-查看官网-12B7F3?style=for-the-badge&logo=tencentqq)](https://kourichat.com/groups/)
 
-
 [![Moe Counter](https://count.getloli.com/get/@KouriChat?theme=moebooru)](https://github.com/KouriChat/KouriChat)
 
 ----------------------------
 API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元）<br>
 官网：[KouriChat](https://kourichat.com)<br>
-技术文档：[KouriChat Wiki](https://kourichat.com/docs)<br>
-角色广场：[KouriChat角色广场](https://avatars.kourichat.com)
 
 ## 🌟 效果示例
 
@@ -47,21 +48,17 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 - 通过[官网](https://kourichat.com)下载项目
 - 最好有一台Windows Server服务器挂机，[雨云服务器五折券](https://www.rainyun.com/kouri_)
 - [项目直属API（推荐）](https://api.kourichat.com/)（注册送2元）
-- [获取DeepSeek API Key](https://cloud.siliconflow.cn/i/aQXU6eC5)（免费15元额度）
+- [获取DeepSeek API Key](https://cloud.siliconflow.cn/i/aQXU6eC5)
 
 ---
 
 ## 📜 项目声明
 
 **法律与伦理准则**
-▸ 本项目仅供技术研究与学习交流
-▸ 禁止用于任何违法或违反道德的场景
-▸ 生成内容不代表开发者立场
+▸ 本项目仅供技术研究与学习交流 ▸ 禁止用于任何违法或违反道德的场景 ▸ 生成内容不代表开发者立场
 
 **使用须知**
-▸ 角色版权归属原始创作者
-▸ 使用者需对自身行为负全责
-▸ 未成年人应在监护下使用
+▸ 角色版权归属原始创作者 ▸ 使用者需对自身行为负全责 ▸ 未成年人应在监护下使用
 
 ---
 
@@ -69,18 +66,19 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 
 ### ✅ 已实现
 
-- 多用户支持
 - 沉浸式角色扮演（支持群聊）
 - 智能对话分段 & 情感化表情包
-- 图像生成 & 图片识别（Kimi集成）
-- 语音消息 & 持久记忆存储
-- 自动更新 & 可视化WebUI
-
-### 🚧 开发中
-
+- 持久记忆存储
+- 可视化WebUI
 - OneBot协议兼容
 - 1.5版本完全重构
 - 独立客户端
+
+### 🚧 开发中
+
+- 多用户支持
+- 图片识别
+- 语音消息
 
 ---
 
@@ -95,32 +93,27 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 
 ### 部署流程
 
-#### 半自动部署流程
-
-```bash
-运行 run.bat
-```
-
 #### 手动部署流程
 
 ```bash
-# 克隆仓库
-git clone https://github.com/KouriChat/KouriChat.git
+# 从release中获取最新的kourichat包实现
+# 同时获取对应版本的elixir核心
+uv tool install .\kourichat-1.5.0.1-py3-none-any.whl --with .\elixir-0.1.0-py3-none-any.whl
 
-# 更新pip
-python -m pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --upgrade pip
+# 先运行获取的网关（社区中下载）
+.\openclaw-onebotv11.exe run
 
-# 安装依赖
-pip install -r requirements.txt
-
-#调整配置文件
-python run_config_web.py
-
-# 启动程序 或 使用WebUI启动
-python run.py
+#运行krc
+kourichat run
 ```
-如果您是服务器部署 推荐安装uu远程 自带不休眠功能 用RDP远程的用户断开连接务必运行断开连接脚本！！！<br>
-1.4.3.2版本注意意图识别密钥也要填写哦！
+
+#### 自动部署
+
+待开发
+
+## 问题反馈
+可以加qq群在群内通过at管理的形式反馈问题
+也可以在项目内通过发布issue的方式反馈问题
 
 ## 💖 支持我们
 
@@ -174,6 +167,7 @@ python run.py
 - **技术文档**：[KouriChat Wiki](https://kourichat.com/docs)
 - **商务合作**：[yangchenglin2004@foxmail.com](mailto:yangchenglin2004@foxmail.com)
 - **更多方式**：[官网](https://kourichat.com/join/)
+
 ---
 
 ## 项目结构
