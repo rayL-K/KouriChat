@@ -36,8 +36,6 @@
 ----------------------------
 API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元）<br>
 官网：[KouriChat](https://kourichat.com)<br>
-技术文档：[KouriChat Wiki](https://kourichat.com/docs)<br>
-角色广场：[KouriChat角色广场](https://avatars.kourichat.com)
 
 ## 🌟 效果示例
 
@@ -50,7 +48,7 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 - 通过[官网](https://kourichat.com)下载项目
 - 最好有一台Windows Server服务器挂机，[雨云服务器五折券](https://www.rainyun.com/kouri_)
 - [项目直属API（推荐）](https://api.kourichat.com/)（注册送2元）
-- [获取DeepSeek API Key](https://cloud.siliconflow.cn/i/aQXU6eC5)（免费15元额度）
+- [获取DeepSeek API Key](https://cloud.siliconflow.cn/i/aQXU6eC5)
 
 ---
 
@@ -68,18 +66,19 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 
 ### ✅ 已实现
 
-- 多用户支持
 - 沉浸式角色扮演（支持群聊）
 - 智能对话分段 & 情感化表情包
-- 图像生成 & 图片识别（Kimi集成）
-- 语音消息 & 持久记忆存储
-- 自动更新 & 可视化WebUI
+- 持久记忆存储
+- 可视化WebUI
 - OneBot协议兼容
 - 1.5版本完全重构
+- 独立客户端
 
 ### 🚧 开发中
 
-- 独立客户端
+- 多用户支持
+- 图片识别
+- 语音消息
 
 ---
 
@@ -94,47 +93,27 @@ API平台：[Kouri API（推荐）](https://api.kourichat.com/)（注册送2元�
 
 ### 部署流程
 
-#### 半自动部署流程
-
-```bash
-运行 run.bat
-```
-
 #### 手动部署流程
 
 ```bash
-# 克隆仓库
-git clone https://github.com/KouriChat/KouriChat.git
+# 从release中获取最新的kourichat包实现
+# 同时获取对应版本的elixir核心
+uv tool install .\kourichat-1.5.0.1-py3-none-any.whl --with .\elixir-0.1.0-py3-none-any.whl
 
-# 更新pip
-python -m pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --upgrade pip
+# 先运行获取的网关（社区中下载）
+.\openclaw-onebotv11.exe run
 
-# 安装依赖
-pip install -r requirements.txt
-
-#调整配置文件
-python run_config_web.py
-
-# 启动程序 或 使用WebUI启动
-python run.py
+#运行krc
+kourichat run
 ```
 
-#### WebUI 控制台（1.5 重构版，可选）
+#### 自动部署
 
-前端位于 `frontend/`（Vue3 + Vite + TS + Tailwind）：
+待开发
 
-```bash
-cd frontend
-npm install
-npm run build      # 产出 frontend/dist，kourichat.webui 插件默认托管该目录
-```
-
-`kourichat.toml` 增加 `[[plugins]] module = "kourichat.webui"`（默认 127.0.0.1:8080），
-`kourichat run` 后浏览器打开 http://127.0.0.1:8080：
-扫码登录、账号状态、聊天调试、日志、配置编辑。
-
-如果您是服务器部署 推荐安装uu远程 自带不休眠功能 用RDP远程的用户断开连接务必运行断开连接脚本！！！<br>
-1.4.3.2版本注意意图识别密钥也要填写哦！
+## 问题反馈
+可以加qq群在群内通过at管理的形式反馈问题
+也可以在项目内通过发布issue的方式反馈问题
 
 ## 💖 支持我们
 
