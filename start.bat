@@ -10,6 +10,9 @@ rem GATEWAY_URL is intentionally empty because the official Release has no gatew
 rem Put a direct community gateway URL here, then start.bat will download it.
 rem ============================================================================
 set "RELEASE_API_URL=https://api.github.com/repos/KouriChat/KouriChat/releases/latest"
+set "RELEASE_API_MIRROR_1=https://ghproxy.net/https://api.github.com/repos/KouriChat/KouriChat/releases/latest"
+set "RELEASE_API_MIRROR_2=https://gh-proxy.com/https://api.github.com/repos/KouriChat/KouriChat/releases/latest"
+rem 不设置固定版本兜底：必须解析到真实的最新 Release 才允许继续。
 set "KOURI_WHL_NAME="
 set "ELIXIR_WHL_NAME="
 set "KOURI_WHL_URL="
@@ -48,25 +51,24 @@ echo [ERROR] uv installation failed. Check your network or permissions.
 goto :fail
 
 :prepare_packages
-call :resolve_latest_release
-if errorlevel 1 goto :release_failed
 set "PKG_DIR=%~dp0packages"
 if not exist "%PKG_DIR%" mkdir "%PKG_DIR%"
+rem 先解析真实最新 Release，再决定复用哪个版本的本地缓存。
+call :resolve_latest_release
+if errorlevel 1 goto :release_failed
 set "KOURI_WHL=%PKG_DIR%\%KOURI_WHL_NAME%"
 set "ELIXIR_WHL=%PKG_DIR%\%ELIXIR_WHL_NAME%"
 
-if exist "%KOURI_WHL%" goto :check_elixir
-
-echo [INFO] Downloading KouriChat package...
-call :download_wheel "%KOURI_WHL_NAME%" "%KOURI_WHL_URL%" "%KOURI_WHL%"
-if errorlevel 1 goto :download_failed
-
-:check_elixir
-if exist "%ELIXIR_WHL%" goto :install_package
-
-echo [INFO] Downloading Elixir core package...
-call :download_wheel "%ELIXIR_WHL_NAME%" "%ELIXIR_WHL_URL%" "%ELIXIR_WHL%"
-if errorlevel 1 goto :download_failed
+if not exist "%KOURI_WHL%" (
+    echo [INFO] Downloading latest KouriChat package...
+    call :download_wheel "%KOURI_WHL_NAME%" "%KOURI_WHL_URL%" "%KOURI_WHL%"
+    if errorlevel 1 goto :download_failed
+)
+if not exist "%ELIXIR_WHL%" (
+    echo [INFO] Downloading latest Elixir core package...
+    call :download_wheel "%ELIXIR_WHL_NAME%" "%ELIXIR_WHL_URL%" "%ELIXIR_WHL%"
+    if errorlevel 1 goto :download_failed
+)
 
 :install_package
 where kourichat >nul 2>nul
@@ -110,7 +112,8 @@ goto :fail
 
 :release_failed
 echo [ERROR] Could not resolve the latest KouriChat Release.
-echo Please check GitHub API access or set fixed package URLs in the editable section.
+echo Startup is stopped because a fixed or stale version is not allowed.
+echo Check API access, mirror settings, or network connectivity.
 goto :fail
 
 :download_failed
@@ -146,10 +149,24 @@ for /l %%S in (5,-1,1) do (
 )
 exit /b 1
 
+:find_cached_packages
+set "CACHED_KOURI_WHL="
+set "CACHED_ELIXIR_WHL="
+for /f "delims=" %%F in ('dir /b /a-d "%PKG_DIR%\kourichat-*.whl" 2^>nul') do if not defined CACHED_KOURI_WHL set "CACHED_KOURI_WHL=%PKG_DIR%\%%F"
+for /f "delims=" %%F in ('dir /b /a-d "%PKG_DIR%\elixir-*.whl" 2^>nul') do if not defined CACHED_ELIXIR_WHL set "CACHED_ELIXIR_WHL=%PKG_DIR%\%%F"
+if not defined CACHED_KOURI_WHL exit /b 1
+if not defined CACHED_ELIXIR_WHL exit /b 1
+exit /b 0
+
 :resolve_latest_release
 set "RELEASE_INFO=%TEMP%\kourichat-latest-%RANDOM%.txt"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { $r=Invoke-RestMethod -UseBasicParsing -TimeoutSec 30 -Headers @{ 'User-Agent'='KouriChat-start' } -Uri '%RELEASE_API_URL%'; $k=$r.assets | Where-Object { $_.name -like 'kourichat-*.whl' } | Select-Object -First 1; $e=$r.assets | Where-Object { $_.name -like 'elixir-*.whl' } | Select-Object -First 1; if ($k -and $e) { @('KOURI_WHL_NAME=' + $k.name,'KOURI_WHL_URL=' + $k.browser_download_url,'ELIXIR_WHL_NAME=' + $e.name,'ELIXIR_WHL_URL=' + $e.browser_download_url) | Set-Content -Encoding ASCII '%RELEASE_INFO%'; exit 0 }; exit 1 } catch { exit 1 }"
-if errorlevel 1 exit /b 1
+del /q "%RELEASE_INFO%" >nul 2>nul
+for %%A in ("%RELEASE_API_URL%" "%RELEASE_API_MIRROR_1%" "%RELEASE_API_MIRROR_2%") do (
+    if not exist "%RELEASE_INFO%" (
+        echo [INFO] Resolving latest Release through %%~A
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { $r=Invoke-RestMethod -UseBasicParsing -TimeoutSec 30 -Headers @{ 'User-Agent'='KouriChat-start' } -Uri '%%~A'; $k=$r.assets | Where-Object { $_.name -like 'kourichat-*.whl' } | Select-Object -First 1; $e=$r.assets | Where-Object { $_.name -like 'elixir-*.whl' } | Select-Object -First 1; if ($k -and $e) { ('KOURI_WHL_NAME=' + $k.name),('KOURI_WHL_URL=' + $k.browser_download_url),('ELIXIR_WHL_NAME=' + $e.name),('ELIXIR_WHL_URL=' + $e.browser_download_url) | Out-File -Encoding ascii '%RELEASE_INFO%'; exit 0 }; exit 1 } catch { exit 1 }"
+    )
+)
 if not exist "%RELEASE_INFO%" exit /b 1
 for /f "usebackq tokens=1,* delims==" %%A in ("%RELEASE_INFO%") do set "%%A=%%B"
 del /q "%RELEASE_INFO%" >nul 2>nul
